@@ -1,0 +1,85 @@
+# Profile: Hyperspace Labs
+# File: config.toml
+#
+# Configurations for targets and protocols with orbit.
+
+[[target]]
+name = "quartz"
+description = "End-to-end fpga toolflow with intel quartus prime"
+command = "python"
+args = ["./targets/quartz.py"]
+fileset.board = "*.board"
+fileset.bdf = "*.bdf"
+explanation = """
+Steps through the FPGA compilation process (synthesis, place-and-route,
+bitstream generation). By default, this target uses the VHDL-93 standard for
+synthesis. This target supports directly programming a connected FPGA over jtag.
+
+Help:
+    orbit build --all --target quartz -- --help
+
+Environment:
+    ORBIT_ENV_QUARTUS_PATH      Files ystem path to Quartus binaries
+
+Dependencies:
+    Intel Quartus Prime Lite (tested: 19.1)
+    Python (tested: 3.8.6)
+"""
+
+
+[[target]]
+name   = "gsim"
+description = "Simulations with ghdl"
+command = "python"
+args    = ["./targets/gsim.py"]
+explanation = """
+Analyzes and simulates a testbench with GHDL.
+
+Help:
+    orbit build --all --target gsim -- --help
+
+Environment:
+    ORBIT_ENV_GHDL_PATH             Filesystem path specifying GHDL binary
+
+Dependencies:
+    GHDL (tested: 3.0.0-dev (2.0.0.r101.g791ff0c1) [Dunoon edition])
+    Python (tested: 3.8.6)
+"""
+
+
+[[target]]
+name = "msim"
+description = "Simulations with modelsim"
+command = "python"
+args    = ["./targets/msim.py"]
+fileset.dofl = "{{ orbit.bench }}.do"
+explanation = """
+Compiles HDL files and runs a simulation using ModelSim. This target supports
+running simulations in batch mode (default) or the gui. This target also 
+supports running a design model in Python to generate test vectors, and 
+optionally specifying a verification library to use.
+
+Help:
+    orbit build --force --target msim -- --help
+
+Environment:
+    ORBIT_ENV_MODELSIM_PATH         Filesystem path to ModelSim binaries
+
+Dependencies:
+    ModelSim ALTERA STARTER EDITION (tested: 10.5b 2016.10 Oct 5 2016)
+    Python (tested: 3.9.7)
+"""
+
+
+[[protocol]]
+name = "zip"
+description = "Handle zip files with requests"
+command = "python"
+args = ["./protocols/zip.py", "{{ orbit.ip.source.url }}"]
+
+
+[[protocol]]
+name = "git"
+description = "Handle remote repositories with git"
+command = "git"
+args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source.url }}"]
