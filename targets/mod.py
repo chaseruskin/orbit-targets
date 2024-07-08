@@ -22,7 +22,7 @@ class Env:
         try:
             value = os.environ[key]
         except KeyError:
-            return None
+            value = None
         # do not allow empty values to trigger variable
         if value is not None and len(value) == 0:
             value = None
