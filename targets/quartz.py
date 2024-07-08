@@ -84,9 +84,6 @@ pgm_permanent = args.prog_flash
 # determine if to open the quartus project in GUI
 open_project = args.open
 
-# don't add simulation files to project
-ignore_sim = args.include_sim == False
-
 # default flow is none (won't execute any flow)
 flow = None
 synth = impl = asm = sta = eda_netlist = False
@@ -128,9 +125,9 @@ board_config = None
 for rule in Blueprint().parse():
     if rule.fset == 'VHDL' or rule.fset == 'VLOG':
         hdl_files += [Hdl(rule.fset, rule.lib, rule.path)]
-    elif rule.fileset == "BDF":
+    elif rule.fset == "BDF":
         bdf_files += [rule.path]
-    elif rule.fileset == 'BOARD':
+    elif rule.fset == 'BOARD':
         if board_config == None and args.board is None:
             board_config = toml.load(rule.path)
             print('info: loaded board file:', rule.path)
