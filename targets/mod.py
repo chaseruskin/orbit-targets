@@ -19,7 +19,10 @@ class Env:
 
     @staticmethod
     def read(key: str, default: str=None, missing_ok: bool=True) -> None:
-        value = os.environ.get(key)
+        try:
+            value = os.environ[key]
+        except KeyError:
+            return None
         # do not allow empty values to trigger variable
         if value is not None and len(value) == 0:
             value = None
