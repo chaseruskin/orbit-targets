@@ -10,7 +10,7 @@ from typing import List
 from mod import Env, Generic, Command, Hdl, Blueprint
 
 # set up environment and constants
-BENCH: str = Env.read("ORBIT_BENCH", missing_ok=False)
+BENCH: str = Env.read("ORBIT_BENCH", missing_ok=True)
 
 # append modelsim installation path to PATH env variable
 Env.add_path(Env.read("ORBIT_ENV_MODELSIM_PATH", missing_ok=True))
@@ -30,7 +30,7 @@ parser.add_argument('--top-config', default=None, help='define the top-level con
 args = parser.parse_args()
 
 # testbench's VHDL configuration unit
-TOP_LEVEL_CONFIG = str(args.top_config)
+TOP_LEVEL_CONFIG = args.top_config
 
 OPEN_GUI = bool(args.gui)
 STOP_AT_SIM = bool(args.stop_at_sim)
@@ -105,7 +105,7 @@ with open(DO_FILE, 'w') as file:
 mode = "-batch" if OPEN_GUI == False else "-gui"
 
 # override bench with top-level config
-BENCH = TOP_LEVEL_CONFIG if TOP_LEVEL_CONFIG != None else BENCH
+BENCH = str(TOP_LEVEL_CONFIG) if TOP_LEVEL_CONFIG != None else str(BENCH)
 
 # reference: https://stackoverflow.com/questions/57392389/what-is-vsim-command-line
 print("info: starting simulation for testbench", Env.quote_str(BENCH), "...")
