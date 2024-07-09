@@ -46,7 +46,7 @@ for rule in Blueprint().parse():
     if rule.fset == 'VHDL' or rule.fset == 'VLOG':
         compile_order += [Hdl(rule.fset, rule.lib, rule.path)]
     # see if there is a do file to run for opening modelsim
-    elif rule.fset == 'DOFL':
+    elif rule.fset == 'DO':
         tb_do_file = rule.path
         pass
     pass

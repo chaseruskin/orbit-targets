@@ -7,8 +7,8 @@
 name = "quartz"
 description = "End-to-end fpga toolflow with intel quartus prime"
 command = "python"
-args = ["./targets/quartz.py"]
-fileset.board = "*.board"
+args = ["targets/quartz.py"]
+fileset.board = "*.board.toml"
 fileset.bdf = "*.bdf"
 explanation = """
 Steps through the FPGA compilation process (synthesis, place-and-route,
@@ -26,12 +26,11 @@ Dependencies:
     Python (tested: 3.8.6)
 """
 
-
 [[target]]
 name   = "gsim"
 description = "Simulations with ghdl"
 command = "python"
-args    = ["./targets/gsim.py"]
+args    = ["targets/gsim.py"]
 explanation = """
 Analyzes and simulates a testbench with GHDL.
 
@@ -46,13 +45,18 @@ Dependencies:
     Python (tested: 3.8.6)
 """
 
+[[target]]
+name = "veri"
+description = "Run tests with verilator"
+command = "python"
+args = ["targets/veri.py"]
 
 [[target]]
 name = "msim"
-description = "Simulations with modelsim"
+description = "Run tests with modelsim"
 command = "python"
-args    = ["./targets/msim.py"]
-fileset.dofl = "{{ orbit.bench }}.do"
+args    = ["targets/msim.py"]
+fileset.do = "{{ orbit.bench }}.do"
 explanation = """
 Compiles HDL files and runs a simulation using ModelSim. This target supports
 running simulations in batch mode (default) or the gui. This target also 
@@ -70,13 +74,11 @@ Dependencies:
     Python (tested: 3.9.7)
 """
 
-
 [[protocol]]
 name = "zip"
 description = "Handle zip files with requests"
 command = "python"
 args = ["./protocols/zip.py", "{{ orbit.ip.source.url }}"]
-
 
 [[protocol]]
 name = "git"

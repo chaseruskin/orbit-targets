@@ -15,7 +15,7 @@ from typing import List
 from mod import Command, Status, Env, Generic, Blueprint, Hdl
 
 # set up environment and constants
-BENCH: str = Env.read("ORBIT_BENCH", missing_ok=True)
+BENCH = Env.read("ORBIT_BENCH", missing_ok=True)
 LIBRARY: str = Env.read("ORBIT_IP_LIBRARY", missing_ok=False)
 
 # append ghdl path to PATH env variable
