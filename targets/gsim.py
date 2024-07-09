@@ -27,12 +27,12 @@ parser = argparse.ArgumentParser(prog='gsim', allow_abbrev=False)
 parser.add_argument('--lint', action='store_true', default=False, help='run static analysis and exit')
 parser.add_argument('--generic', '-g', action='append', type=Generic.from_arg, default=[], metavar='KEY=VALUE', help='override top-level VHDL generics')
 parser.add_argument('--std', action='store', default='93', metavar='EDITION', help="specify the VHDL edition (87, 93, 02, 08, 19)")
-parser.add_argument('--relax', action='store_true', help='relax semantic rules for ghdl')
+parser.add_argument('--no-relax', action='store_true', help='disable relaxing semantic rules for ghdl')
 parser.add_argument('--exit-on', action='store', default='error', metavar='LEVEL', help='select severity level to exit on (default: error)')
 
 args = parser.parse_args()
 
-IS_RELAXED = bool(args.relax)
+IS_RELAXED = not bool(args.no_relax)
 GENERICS: List[Generic] = args.generic
 STD_VHDL = str(args.std)
 LINT_ONLY = bool(args.lint)
@@ -65,6 +65,8 @@ for item in rtl_order:
         .spawn() \
         .unwrap()
     pass
+
+pass
 
 # halt workflow here when only providing lint
 if LINT_ONLY == True:
