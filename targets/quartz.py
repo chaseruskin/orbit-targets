@@ -123,7 +123,7 @@ pin_assignments = []
 board_config = None
 # read/parse blueprint file
 for rule in Blueprint().parse():
-    if rule.fset == 'VHDL' or rule.fset == 'VLOG':
+    if rule.fset == 'VHDL' or rule.fset == 'VLOG' or rule.fset == 'SYSV':
         hdl_files += [Hdl(rule.fset, rule.lib, rule.path)]
     elif rule.fset == "BDF":
         bdf_files += [rule.path]
@@ -170,7 +170,7 @@ project_new """ + Env.quote_str(PROJECT) + """ -revision """ + Env.quote_str(PRO
 # Set default configurations and device
 set_global_assignment -name NUM_PARALLEL_PROCESSORS """ + Env.quote_str("ALL") + """
 set_global_assignment -name VHDL_INPUT_VERSION VHDL_1993
-set_global_assignment -name VERILOG_INPUT_VERSION VERILOG_2001
+set_global_assignment -name VERILOG_INPUT_VERSION SYSTEMVERILOG_2005
 set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (VHDL)"
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VHDL" -section_id EDA_SIMULATION
 set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id EDA_SIMULATION
@@ -202,6 +202,8 @@ for src in hdl_files:
         tcl.append("set_global_assignment -name VHDL_FILE "+Env.quote_str(src.path)+" -library "+Env.quote_str(src.lib))
     elif src.fset == 'VLOG':
         tcl.append("set_global_assignment -name VERILOG_FILE "+Env.quote_str(src.path)+" -library "+Env.quote_str(src.lib))
+    elif src.fset == 'SYSV':
+        tcl.append("set_global_assignement -name SYSTEMVERILOG_FILE "+Env.quote_str(src.path)+" -library "+Env.quote_str(src.lib))
     pass
 
 for bdf in bdf_files:
