@@ -43,7 +43,7 @@ tb_do_file: str = None
 compile_order: List[Hdl] = []
 # collect data from the blueprint
 for rule in Blueprint().parse():
-    if rule.fset == 'VHDL' or rule.fset == 'VLOG':
+    if rule.fset == 'VHDL' or rule.fset == 'VLOG' or rule.fset == 'SYSV':
         compile_order += [Hdl(rule.fset, rule.lib, rule.path)]
     # see if there is a do file to run for opening modelsim
     elif rule.fset == 'DO':
@@ -66,6 +66,8 @@ for item in compile_order:
         Command('vcom').arg('-work').arg(item.lib).arg(item.path).spawn().unwrap()
     elif item.fset == 'VLOG':
         Command('vlog').arg('-work').arg(item.lib).arg(item.path).spawn().unwrap()
+    elif item.fset == 'SYSV':
+        Command('vlog').arg('-sv').arg('-work').arg(item.lib).arg(item.path).spawn().unwrap()
     pass
 
 if LINT_ONLY == True:
