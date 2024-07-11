@@ -10,7 +10,7 @@ from typing import List
 from mod import Env, Generic, Command, Hdl, Blueprint
 
 # set up environment and constants
-BENCH: str = Env.read("ORBIT_BENCH", missing_ok=True)
+BENCH = Env.read("ORBIT_BENCH", missing_ok=True)
 
 # append modelsim installation path to PATH env variable
 Env.add_path(Env.read("ORBIT_ENV_MODELSIM_PATH", missing_ok=True))

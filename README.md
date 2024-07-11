@@ -6,7 +6,7 @@ A collection of settings for [Orbit](https://github.com/cdotrus/orbit), an agile
 
 To access the configurations and get the most out of these settings, you should at least have `git` and `python` installed and found on your system's PATH.
 
-1. Download the profile using `git`:
+1. Download the profile from its remote repository using `git`:
 
 ```
 git clone https://github.com/hyperspace-labs/orbit-profile.git "$(orbit env ORBIT_HOME)/profiles/hyperspace-labs"
@@ -17,7 +17,7 @@ git clone https://github.com/hyperspace-labs/orbit-profile.git "$(orbit env ORBI
 pip install -r "$(orbit env ORBIT_HOME)/profiles/hyperspace-labs/requirements.txt"
 ```
 
-3. Link the profile to Orbit's home configuration:
+3. Link the profile in the home configuration using `orbit`:
 
 ```
 orbit config --append include="profiles/hyperspace-labs/config.toml"
