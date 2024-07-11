@@ -54,6 +54,7 @@ for rule in Blueprint().parse():
 print("info: compiling HDL source code ...")
 item: Hdl
 libraries = []
+work_lib = 'work'
 for item in compile_order:
     print('  ->', Env.quote_str(item.path))
     # create new libraries and their mappings
@@ -68,6 +69,8 @@ for item in compile_order:
         Command('vlog').arg('-work').arg(item.lib).arg(item.path).spawn().unwrap()
     elif item.fset == 'SYSV':
         Command('vlog').arg('-sv').arg('-work').arg(item.lib).arg(item.path).spawn().unwrap()
+    # the last file to write the library is the working library
+    work_lib = item.lib
     pass
 
 if LINT_ONLY == True:
@@ -116,6 +119,7 @@ Command('vsim') \
     .arg('-onfinish').arg('stop') \
     .arg('-do').arg(DO_FILE) \
     .arg('-wlf').arg(WAVEFORM_FILE) \
+    .arg('-work').arg(work_lib) \
     .arg('+nowarn3116') \
     .arg(BENCH) \
     .args(['-g' + item.to_str() for item in GENERICS]) \
