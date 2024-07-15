@@ -71,6 +71,9 @@ parser.add_argument("--board", action="store", default=None, type=str, help="boa
 parser.add_argument("--prog-sram", action="store_true", default=False, help="program with temporary bitfile")
 parser.add_argument("--prog-flash", action="store_true", default=False, help="program with permanent bitfile")
 
+parser.add_argument("--family", action="store", type=str, help="targeted fpga family")
+parser.add_argument("--device", action="store", type=str, help="targeted fpga device")
+
 parser.add_argument('--generic', '-g', action='append', type=Generic.from_arg, default=[], metavar='key=value', help='override top-level VHDL generics')
 
 args = parser.parse_args()
@@ -80,6 +83,9 @@ generics: List[Generic] = args.generic
 # determine if to program the FPGA board
 pgm_temporary = args.prog_sram
 pgm_permanent = args.prog_flash
+
+FAMIY = args.family
+DEVICE = args.device
 
 # determine if to open the quartus project in GUI
 open_project = args.open
