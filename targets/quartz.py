@@ -71,8 +71,8 @@ parser.add_argument("--board", action="store", default=None, type=str, help="boa
 parser.add_argument("--prog-sram", action="store_true", default=False, help="program with temporary bitfile")
 parser.add_argument("--prog-flash", action="store_true", default=False, help="program with permanent bitfile")
 
-parser.add_argument("--family", action="store", type=str, help="targeted fpga family")
-parser.add_argument("--device", action="store", type=str, help="targeted fpga device")
+parser.add_argument("--family", action="store", default=None, type=str, help="targeted fpga family")
+parser.add_argument("--device", action="store", default=None, type=str, help="targeted fpga device")
 
 parser.add_argument('--generic', '-g', action='append', type=Generic.from_arg, default=[], metavar='key=value', help='override top-level VHDL generics')
 
@@ -84,7 +84,7 @@ generics: List[Generic] = args.generic
 pgm_temporary = args.prog_sram
 pgm_permanent = args.prog_flash
 
-FAMIY = args.family
+FAMILY = args.family
 DEVICE = args.device
 
 # determine if to open the quartus project in GUI
@@ -146,8 +146,9 @@ for rule in Blueprint().parse():
 
 # verify we got a matching board file if specified from the command-line
 if board_config is None and args.board is not None:
-    exit("error: board file "+Env.quote_str(args.board)+" is not found in blueprint")
-    
+    print("error: board file "+Env.quote_str(args.board)+" is not found in blueprint")
+    exit(101)
+
 if board_config is not None:
     FAMILY = board_config["part"]["FAMILY"]
     DEVICE = board_config["part"]["DEVICE"]
@@ -155,11 +156,13 @@ if board_config is not None:
 top_unit = Env.read("ORBIT_TOP", missing_ok=False)
 
 if FAMILY == None:
-    exit("error: FPGA \"FAMILY\" must be specified in .board file's `[part]` table")
+    print("error: FPGA \"FAMILY\" must be specified in .board file's `[part]` table")
+    exit(101)
 if DEVICE == None:
-    exit("error: FPGA \"DEVICE\" must be specified in .board file's `[part]` table")
+    print("error: FPGA \"DEVICE\" must be specified in .board file's `[part]` table")
+    exit(101)
 # verify the board has pin assignments
-if 'pins' not in board_config.keys():
+if board_config is None or (board_config is not None and 'pins' not in board_config.keys()):
     print("warning: no pin assignments found due to missing `[pins]` table in board file")
 
 # --- Process data -------------------------------------------------------------
@@ -228,7 +231,7 @@ if len(generics) > 0:
     pass
 
 # set the pin assignments
-if 'pins' in board_config.keys():
+if board_config is not None and 'pins' in board_config.keys():
     tcl.append('# Set the pin assignments')
     for (pin, port) in board_config['pins'].items():
         tcl.append("set_location_assignment "+Env.quote_str(pin)+" -to "+Env.quote_str(port))
