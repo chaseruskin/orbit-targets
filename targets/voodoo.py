@@ -1,6 +1,12 @@
 # Provides the glue logic between a filelist and the Xilinx Vivado EDA tool.
 # This script generates a tcl script and executes it using Vivado in a 
 # subprocess.
+#
+# Dependencies:
+#   Vivado (tested: 2019.2)
+#
+# Reference:
+#   https://grittyengineer.com/vivado-non-project-mode-releasing-vivados-true-potential/
 
 from mod import Env, Command, Generic
 import argparse

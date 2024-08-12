@@ -1,4 +1,10 @@
 # Creates a Vivado project for interactive use.
+#
+# Dependencies:
+#   Vivado (tested: 2019.2)
+#
+# Reference:
+#   https://grittyengineer.com/vivado-project-mode-tcl-script/
 
 from mod import Env, Command, Generic
 import argparse

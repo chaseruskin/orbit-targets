@@ -1,10 +1,10 @@
-# Orbit Profile
+# orbit-profile
 
-A collection of settings for [Orbit](https://github.com/chaseruskin/orbit), a package manager and build tool for hardware description languages (HDLs).
+[Orbit](https://github.com/chaseruskin/orbit) configurations for FPGA development.
   
 ## Installing
 
-To access the configurations and get the most out of these settings, you should at least have `git` and `python` installed and found on your system's PATH.
+To apply these configurations to Orbit:
 
 1. Download the profile from its remote repository using `git`:
 
@@ -17,7 +17,7 @@ git clone https://github.com/hyperspace-labs/orbit-profile.git "$(orbit env ORBI
 pip install -r "$(orbit env ORBIT_HOME)/profiles/hyperspace-labs/requirements.txt"
 ```
 
-1. Include the profile's configuration in Orbit's global config file using `orbit`:
+1. Include the profile's configuration file using `orbit`:
 
 ```
 orbit config "$(orbit env ORBIT_HOME)/config.toml" --push include="profiles/hyperspace-labs/config.toml"
