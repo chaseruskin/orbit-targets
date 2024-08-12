@@ -139,11 +139,10 @@ def main():
         tcl.push(['exit'])
     tcl.save()
 
-    child = Command(VIVADO_CMD) \
+    Command(VIVADO_CMD) \
         .args(['-mode', mode, '-nojournal', '-nolog', '-source', tcl.get_path()]) \
         .spawn()
-
-    exit(0)
+    pass
 
 
 if __name__ == '__main__':

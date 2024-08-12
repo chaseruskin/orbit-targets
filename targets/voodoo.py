@@ -172,7 +172,7 @@ def main():
     Command(VIVADO_CMD) \
         .args(['-mode', 'batch', '-nojournal', '-nolog', '-source', tcl.get_path()]) \
         .spawn()
-    exit(0)
+    pass
 
 
 if __name__ == '__main__':
