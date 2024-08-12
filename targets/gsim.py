@@ -1,21 +1,20 @@
-# Profile: Hyperspace Labs
-# Target: gsim
-# References: https://github.com/ghdl/ghdl
-#
 # Defines a common workflow for working with the GHDL simulator and software
 # models written in Python used for generating test vector I/O. Generics
 # are passed to the software script as well as the VHDL testbench for
 # synchronization across code.
 #
-# The script is written to be used as the entry-point to an Orbit target.
+# The script is designed to be an entry point for an Orbit target.
+#
+# References:
+#   https://github.com/ghdl/ghdl
 
 import argparse
 from typing import List
 
-from mod import Command, Status, Env, Generic, Blueprint, Hdl
+from mod import Command, Status, Env, Generic, Blueprint, Step, Fileset
 
 # set up environment and constants
-BENCH = Env.read("ORBIT_BENCH", missing_ok=True)
+BENCH = Env.read("ORBIT_TB_NAME", missing_ok=True)
 LIBRARY: str = Env.read("ORBIT_IP_LIBRARY", missing_ok=False)
 
 # append ghdl path to PATH env variable
@@ -47,15 +46,15 @@ if IS_RELAXED == True:
     GHDL_OPTS += ['-frelaxed']
 
 # read blueprint
-rtl_order: List[Hdl] = []
+rtl_order: List[Step] = []
 for rule in Blueprint().parse():
-    if rule.fset == 'VHDL':
-        rtl_order += [Hdl(rule.fset, rule.lib, rule.path)]
+    if rule.fset == Fileset.Vhdl:
+        rtl_order += [rule]
     pass
 
 # analyze units
 print("info: analyzing hdl source code ...")
-item: Hdl
+item: Step
 for item in rtl_order:
     print('  ->', Env.quote_str(item.path))
     Command('ghdl') \

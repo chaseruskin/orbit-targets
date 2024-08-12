@@ -8,19 +8,10 @@
 # Reference:
 #   https://grittyengineer.com/vivado-non-project-mode-releasing-vivados-true-potential/
 
-from mod import Env, Command, Generic
+from mod import Env, Command, Generic, Blueprint, Tcl, Esc
 import argparse
 from enum import Enum
 import os
-
-class Esc:
-    def __init__(self, inner: str):
-        self._inner = inner
-
-    def __str__(self):
-        return str(self._inner)
-    pass
-
 
 class Step(Enum):
     Synth = 0
@@ -43,45 +34,6 @@ class Step(Enum):
         if s == 'pgm':
             return Step.Pgm
         pass
-
-
-class Tcl:
-    def __init__(self, path: str):
-        self._file: str = path
-        self._data: str = ''
-        self._indent: int = 0
-        pass
-
-    def push(self, code, end='\n', raw=False):
-        if raw == True:
-            self._data += ('  '*self._indent) + code
-        else:
-            for c in code:
-                self._data += ('  '*self._indent)
-                if isinstance(c, Esc) == True:
-                    self._data += str(c) + ' '
-                else:
-                    self._data += "\"" + str(c) + "\"" + ' '
-            pass
-        self._data += end
-        pass
-
-    def save(self):
-        with open(self._file, 'w') as f:
-            f.write(self._data)
-        pass
-
-    def indent(self):
-        self._indent += 1
-
-    def dedent(self):
-        self._indent -= 1
-        if self._indent < 0:
-            self._indent = 0
-        pass
-
-    def get_path(self) -> str:
-        return self._file
     pass
 
 
@@ -181,8 +133,7 @@ def main():
         pass
 
     # convert environment variables to script constants
-    TOP: str = str(Env.read('ORBIT_TOP', missing_ok=False))
-    BLUEPRINT_FILE: str = str(Env.read('ORBIT_BLUEPRINT', missing_ok=False))
+    TOP: str = str(Env.read('ORBIT_TOP_NAME', missing_ok=False))
     BIT_FILE: str = str(TOP)+'.bit'
 
     VIVADO_CMD = 'vivado.bat' if no_bat == False and os.name == 'nt' else 'vivado'
@@ -192,19 +143,16 @@ def main():
     # try to disable webtalk
     tcl.push(['config_webtalk', '-user', 'off'])
 
-    # read source code files from blueprint
-    with open(BLUEPRINT_FILE, 'r') as fh:
-        steps = fh.read().splitlines()
-        for step in steps:
-            fileset, lib, path = step.split('\t', maxsplit=3)
-            if fileset == 'VHDL':
-                tcl.push(['read_vhdl', '-library', lib, path])
-            if fileset == 'VLOG':
-                tcl.push(['read_verilog', '-library', lib, path])
-            if fileset == 'SYSV':
-                tcl.push(['read_verilog', '-sv', '-library', lib, path])
-            if fileset == 'XDCF':
-                tcl.push(['read_xdc', path])
+    steps = Blueprint().parse()
+    for step in steps:
+        if step.is_vhdl():
+            tcl.push(['read_vhdl', '-library', step.lib, step.path])
+        if step.is_vlog():
+            tcl.push(['read_verilog', '-library', step.lib, step.path])
+        if step.is_sysv():
+            tcl.push(['read_verilog', '-sv', '-library', step.lib, step.path])
+        if step.is_aux('XDCF'):
+            tcl.push(['read_xdc', step.path])
             pass
         pass
 

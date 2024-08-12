@@ -10,12 +10,60 @@ from enum import Enum
 import argparse
 import subprocess
 
+class Esc:
+    def __init__(self, inner: str):
+        self._inner = inner
+
+    def __str__(self):
+        return str(self._inner)
+    pass
+
+
+class Tcl:
+    def __init__(self, path: str):
+        self._file: str = path
+        self._data: str = ''
+        self._indent: int = 0
+        pass
+
+    def push(self, code, end='\n', raw=False):
+        if raw == True:
+            self._data += ('  '*self._indent) + code
+        else:
+            for c in code:
+                self._data += ('  '*self._indent)
+                if isinstance(c, Esc) == True:
+                    self._data += str(c) + ' '
+                else:
+                    self._data += "\"" + str(c) + "\"" + ' '
+            pass
+        self._data += end
+        pass
+
+    def save(self):
+        with open(self._file, 'w') as f:
+            f.write(self._data)
+        pass
+
+    def indent(self):
+        self._indent += 1
+
+    def dedent(self):
+        self._indent -= 1
+        if self._indent < 0:
+            self._indent = 0
+        pass
+
+    def get_path(self) -> str:
+        return self._file
+    pass
+
+
 class Env:
     @staticmethod
     def quote_str(s: str) -> str:
         '''Wraps the string `s` around double quotes `\"` characters.'''
         return '\"' + s + '\"'
-
 
     @staticmethod
     def read(key: str, default: str=None, missing_ok: bool=True) -> None:
@@ -32,12 +80,10 @@ class Env:
             else:
                 value = default
         return value
-    
 
     @staticmethod
     def write(key: str, value: str):
         os.environ[key] = str(value)
-
 
     @staticmethod
     def add_path(path: str) -> bool:
@@ -48,21 +94,61 @@ class Env:
     pass
 
 
-class Hdl:
-    def __init__(self, fset: str, lib: str, path: str):
-        self.lib = lib
-        self.fset = fset
-        self.path = path
-        pass
+class Fileset(Enum):
+    Vhdl = 0,
+    Verilog = 1,
+    SystemVerilog = 2,
+    Undefined = 'e'
+
+    def __init__(self, value):
+        self._value = value
+
+
+    @staticmethod
+    def from_str(s: str):
+        s = str(s).upper()
+        if s == 'VHDL':
+            return Fileset.Vhdl
+        if s == 'VLOG':
+            return Fileset.Verilog
+        if s == 'SYSV':
+            return Fileset.SystemVerilog
+        fset = Fileset.Undefined
+        fset.value = s
+        return fset
     pass
 
 
-class Rule:
+class Step:
     def __init__(self, fset: str, lib: str, path: str):
-        self.fset = fset
+        self.fset = str(fset).upper()
+        self._fset_variant = Fileset.from_str(fset)
         self.lib = lib
         self.path = path
         pass
+
+    def is_builtin(self) -> bool:
+        return self._fset_variant == Fileset.Vhdl or \
+            self._fset_variant == Fileset.Verilog or \
+            self._fset_variant == Fileset.SystemVerilog
+    
+    def is_set(self, fset) -> bool:
+        if isinstance(fset, Fileset):
+            return self._fset_variant == fset
+        return self.fset == str(fset).upper()
+    
+    def is_aux(self, fset: str) -> bool:
+        return self.fset == str(fset).upper()
+
+    def is_vhdl(self) -> bool:
+        return self._fset_variant == Fileset.Vhdl
+    
+    def is_vlog(self) -> bool:
+        return self._fset_variant == Fileset.Verilog
+    
+    def is_sysv(self) -> bool:
+        return self._fset_variant == Fileset.SystemVerilog
+    
     pass
 
 
@@ -71,15 +157,14 @@ class Blueprint:
         self._file = Env.read("ORBIT_BLUEPRINT", missing_ok=False)
         pass
 
-
-    def parse(self) -> List[Rule]:
+    def parse(self) -> List[Step]:
         rules = []
         # read each line of the blueprint to parse the rules
         with open(self._file, 'r') as blueprint:
             for rule in blueprint.readlines():
                 # remove newline and split into three components
                 fileset, identifier, path = rule.strip().split('\t')
-                rules += [Rule(fileset, identifier, path)]
+                rules += [Step(fileset, identifier, path)]
                 pass
             pass
         return rules
@@ -94,7 +179,6 @@ class Generic:
         pass
     pass
 
-
     @classmethod
     def from_str(self, s: str):
         # split on equal sign
@@ -103,7 +187,6 @@ class Generic:
             return None
         return Generic(words[0], words[1])
     
-
     @classmethod
     def from_arg(self, s: str):
         result = Generic.from_str(s)
@@ -112,11 +195,9 @@ class Generic:
             raise argparse.ArgumentTypeError(msg)
         return result
 
-
     def to_str(self) -> str:
         return self.key+'='+self.val
     
-
     def __str__(self):
         return self.key+'='+self.val
     
@@ -128,14 +209,12 @@ class Status(Enum):
     FAIL = 101
     pass
 
-
     @staticmethod
     def from_int(code: int):
         if code == 0:
             return Status.OKAY
         else:
             return Status.FAIL
-
 
     def unwrap(self):
         # print an error message
@@ -153,20 +232,17 @@ class Command:
         self._command = command
         self._args = []
 
-
     def args(self, args: List[str]):
         if args is not None and len(args) > 0:
             self._args += args
         return self
     
-
     def arg(self, arg: str):
         # skip strings that are empty
         if arg is not None and str(arg) != '':
             self._args += [str(arg)]
         return self
     
-
     def spawn(self, verbose: bool=False) -> Status:
         job = [self._command] + self._args
         if verbose == True:
@@ -177,7 +253,6 @@ class Command:
         child = subprocess.Popen(job)
         status = child.wait()
         return Status.from_int(status)
-    
 
     def output(self, verbose: bool=False) -> Tuple[str, Status]:
         job = [self._command] + self._args

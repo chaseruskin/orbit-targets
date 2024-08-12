@@ -7,10 +7,10 @@
 import os
 import argparse
 from typing import List
-from mod import Env, Generic, Command, Hdl, Blueprint
+from mod import Env, Generic, Command, Blueprint, Step, Fileset
 
 # set up environment and constants
-BENCH = Env.read("ORBIT_BENCH", missing_ok=True)
+BENCH = Env.read("ORBIT_TB_NAME", missing_ok=True)
 
 # append modelsim installation path to PATH env variable
 Env.add_path(Env.read("ORBIT_ENV_MODELSIM_PATH", missing_ok=True))
@@ -40,19 +40,19 @@ GENERICS: List[Generic] = args.generic
 
 # process blueprint
 tb_do_file: str = None
-compile_order: List[Hdl] = []
+compile_order: List[Step] = []
 # collect data from the blueprint
 for rule in Blueprint().parse():
-    if rule.fset == 'VHDL' or rule.fset == 'VLOG' or rule.fset == 'SYSV':
-        compile_order += [Hdl(rule.fset, rule.lib, rule.path)]
+    if rule.is_builtin() == True:
+        compile_order += [rule]
     # see if there is a do file to run for opening modelsim
-    elif rule.fset == 'DO':
+    elif rule.is_set('DO'):
         tb_do_file = rule.path
         pass
     pass
 
 print("info: compiling HDL source code ...")
-item: Hdl
+item: Step
 libraries = []
 work_lib = 'work'
 for item in compile_order:
@@ -63,11 +63,11 @@ for item in compile_order:
         Command('vmap').arg(item.lib).arg(item.lib).spawn().unwrap()
         libraries.append(item.lib)
     # compile source code
-    if item.fset == 'VHDL':
+    if item.is_set(Fileset.Vhdl):
         Command('vcom').arg('-work').arg(item.lib).arg(item.path).spawn().unwrap()
-    elif item.fset == 'VLOG':
+    elif item.is_set(Fileset.Verilog):
         Command('vlog').arg('-work').arg(item.lib).arg(item.path).spawn().unwrap()
-    elif item.fset == 'SYSV':
+    elif item.is_set(Fileset.SystemVerilog):
         Command('vlog').arg('-sv').arg('-work').arg(item.lib).arg(item.path).spawn().unwrap()
     # the last file to write the library is the working library
     work_lib = item.lib

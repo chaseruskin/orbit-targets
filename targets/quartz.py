@@ -153,7 +153,7 @@ if board_config is not None:
     FAMILY = board_config["part"]["FAMILY"]
     DEVICE = board_config["part"]["DEVICE"]
 
-top_unit = Env.read("ORBIT_TOP", missing_ok=False)
+top_unit = Env.read("ORBIT_TOP_NAME", missing_ok=False)
 
 if FAMILY == None:
     print("error: FPGA \"FAMILY\" must be specified in .board file's `[part]` table")

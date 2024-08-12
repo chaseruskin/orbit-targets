@@ -10,7 +10,7 @@ from typing import List
 from mod import Command, Env, Generic, Blueprint, Hdl
 
 # set up environment and constants
-BENCH = Env.read("ORBIT_BENCH", missing_ok=True)
+BENCH = Env.read("ORBIT_TB_NAME", missing_ok=True)
 LIBRARY: str = Env.read("ORBIT_IP_LIBRARY", missing_ok=False)
 
 # handle command-line arguments

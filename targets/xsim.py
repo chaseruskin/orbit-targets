@@ -146,8 +146,8 @@ tcl_config = None
 wf_config = None
 py_model = None
 
-TOP = os.environ.get("ORBIT_TOP")
-BENCH = os.environ.get("ORBIT_BENCH")
+TOP = os.environ.get("ORBIT_TOP_NAME")
+BENCH = os.environ.get("ORBIT_TB_NAME")
 
 with open(os.getenv("ORBIT_BLUEPRINT"), 'r') as blueprint:
     for rule in blueprint.readlines():
