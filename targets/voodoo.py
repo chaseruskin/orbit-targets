@@ -1,8 +1,6 @@
-# Profile: Hyperspace Labs
-# Target: voodoo
-#
-# Provide the glue logic between a project's files and the Xilinx Vivado tool.
-# This script generates a tcl script to be executed by vivado in a subprocess.
+# Provides the glue logic between a filelist and the Xilinx Vivado EDA tool.
+# This script generates a tcl script and executes it using Vivado in a 
+# subprocess.
 
 from mod import Env, Command, Generic
 import argparse
@@ -155,69 +153,73 @@ def program_device(tcl: Tcl, bit_file: str):
     tcl.push(['refresh_hw_device', '$device'])
     pass
 
-# collect command-line arguments
-parser = argparse.ArgumentParser(prog='vivo', allow_abbrev=False)
 
-parser.add_argument('--generic', '-g', action='append', type=Generic.from_arg, default=[], metavar='KEY=VALUE', help='override top-level VHDL generics')
-parser.add_argument('--part', required=True, help='specify the FPGA part number')
-parser.add_argument('--run', '-r', required=True, choices=['synth', 'impl', 'route', 'bit', 'pgm'], help='select the step to perform')
-parser.add_argument('--no-bat', action='store_true', help='do not use .bat extension to call vivado')
+def main():
+    # collect command-line arguments
+    parser = argparse.ArgumentParser(prog='voodoo', allow_abbrev=False)
 
-args = parser.parse_args()
+    parser.add_argument('--generic', '-g', action='append', type=Generic.from_arg, default=[], metavar='KEY=VALUE', help='override top-level VHDL generics')
+    parser.add_argument('--part', required=True, help='specify the FPGA part number')
+    parser.add_argument('--run', '-r', required=True, choices=['synth', 'impl', 'route', 'bit', 'pgm'], help='select the step to perform')
+    parser.add_argument('--no-bat', action='store_true', help='do not use .bat extension to call vivado')
 
-# convert argument values to script variables
-fpga_part = str(args.part)
-no_bat = bool(args.no_bat)
-eda_step = Step.from_str(args.run)
-tcl_generics = []
-for g in args.generic:
-    tcl_generics += ['-generic', str(g)]
-    pass
+    args = parser.parse_args()
 
-# convert environment variables to script constants
-TOP: str = str(Env.read('ORBIT_TOP', missing_ok=False))
-BLUEPRINT_FILE: str = str(Env.read('ORBIT_BLUEPRINT', missing_ok=False))
-BIT_FILE: str = str(TOP)+'.bit'
-
-VIVADO_CMD = 'vivado.bat' if no_bat == False and os.name == 'nt' else 'vivado'
-
-tcl = Tcl('orbit.tcl')
-
-# try to disable webtalk
-tcl.push(['config_webtalk', '-user', 'off'])
-
-# read source code files from blueprint
-with open(BLUEPRINT_FILE, 'r') as fh:
-    steps = fh.read().splitlines()
-    for step in steps:
-        fileset, lib, path = step.split('\t', maxsplit=3)
-        if fileset == 'VHDL':
-            tcl.push(['read_vhdl', '-library', lib, path])
-        if fileset == 'VLOG':
-            tcl.push(['read_verilog', '-library', lib, path])
-        if fileset == 'SYSV':
-            tcl.push(['read_verilog', '-sv', '-library', lib, path])
-        if fileset == 'XDCF':
-            tcl.push(['read_xdc', path])
+    # convert argument values to script variables
+    fpga_part = str(args.part)
+    no_bat = bool(args.no_bat)
+    eda_step = Step.from_str(args.run)
+    tcl_generics = []
+    for g in args.generic:
+        tcl_generics += ['-generic', str(g)]
         pass
-    pass
 
-# select which toolflows to perform with vivado
-if eda_step.value >= Step.Synth.value:
-    synthesize(tcl, fpga_part, tcl_generics)
-if eda_step.value >= Step.Impl.value:
-    implement(tcl)
-if eda_step.value >= Step.Route.value:
-    route(tcl)
-if eda_step.value >= Step.Bit.value:
-    bitstream(tcl, BIT_FILE)
-if eda_step.value >= Step.Pgm.value:
-    program_device(tcl, BIT_FILE)
+    # convert environment variables to script constants
+    TOP: str = str(Env.read('ORBIT_TOP', missing_ok=False))
+    BLUEPRINT_FILE: str = str(Env.read('ORBIT_BLUEPRINT', missing_ok=False))
+    BIT_FILE: str = str(TOP)+'.bit'
 
-tcl.save()
+    VIVADO_CMD = 'vivado.bat' if no_bat == False and os.name == 'nt' else 'vivado'
 
-child = Command(VIVADO_CMD) \
-    .args(['-mode', 'batch', '-nojournal', '-nolog', '-source', tcl.get_path()]) \
-    .spawn()
+    tcl = Tcl('orbit.tcl')
 
-exit(0)
+    # try to disable webtalk
+    tcl.push(['config_webtalk', '-user', 'off'])
+
+    # read source code files from blueprint
+    with open(BLUEPRINT_FILE, 'r') as fh:
+        steps = fh.read().splitlines()
+        for step in steps:
+            fileset, lib, path = step.split('\t', maxsplit=3)
+            if fileset == 'VHDL':
+                tcl.push(['read_vhdl', '-library', lib, path])
+            if fileset == 'VLOG':
+                tcl.push(['read_verilog', '-library', lib, path])
+            if fileset == 'SYSV':
+                tcl.push(['read_verilog', '-sv', '-library', lib, path])
+            if fileset == 'XDCF':
+                tcl.push(['read_xdc', path])
+            pass
+        pass
+
+    # select which toolflows to perform with vivado
+    if eda_step.value >= Step.Synth.value:
+        synthesize(tcl, fpga_part, tcl_generics)
+    if eda_step.value >= Step.Impl.value:
+        implement(tcl)
+    if eda_step.value >= Step.Route.value:
+        route(tcl)
+    if eda_step.value >= Step.Bit.value:
+        bitstream(tcl, BIT_FILE)
+    if eda_step.value >= Step.Pgm.value:
+        program_device(tcl, BIT_FILE)
+
+    tcl.save()
+    Command(VIVADO_CMD) \
+        .args(['-mode', 'batch', '-nojournal', '-nolog', '-source', tcl.get_path()]) \
+        .spawn()
+    exit(0)
+
+
+if __name__ == '__main__':
+    main()

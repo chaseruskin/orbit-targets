@@ -9,10 +9,10 @@ fileset.board = "*.board.toml"
 fileset.bdf = "*.bdf"
 
 [[target]]
-name   = "gsim"
+name = "gsim"
 description = "General-purpose GHDL simulations"
 command = "python"
-args    = ["targets/gsim.py"]
+args = ["targets/gsim.py"]
 
 [[target]]
 name = "veri"
@@ -24,14 +24,21 @@ args = ["targets/veri.py"]
 name = "msim"
 description = "General-purpose modelsim simulations"
 command = "python"
-args    = ["targets/msim.py"]
+args = ["targets/msim.py"]
 fileset.do = "{{orbit.bench}}.do"
 
 [[target]]
-name   = "voodoo"
+name = "voodoo"
 description = "Vivado non-project mode toolflow"
 command = "python"
-args    = ["targets/voodoo.py"]
+args = ["targets/voodoo.py"]
+fileset.xdcf = "*.xdc"
+
+[[target]]
+name = "xpro"
+description = "Vivado project mode toolflow"
+command = "python"
+args = ["targets/xpro.py"]
 fileset.xdcf = "*.xdc"
 
 # Protocols
@@ -40,10 +47,10 @@ fileset.xdcf = "*.xdc"
 name = "zip"
 description = "Handle zip files with requests"
 command = "python"
-args = ["./protocols/zip.py", "{{ orbit.ip.source.url }}"]
+args = ["./protocols/zip.py", "{{orbit.ip.source.url}}"]
 
 [[protocol]]
 name = "git"
 description = "Handle remote repositories with git"
 command = "git"
-args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source.url }}"]
+args = ["clone", "-b", "{{orbit.ip.version}}", "{{orbit.ip.source.url}}"]
