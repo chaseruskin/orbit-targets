@@ -1,6 +1,6 @@
 # Orbit Profile
 
-A collection of settings for [Orbit](https://github.com/cdotrus/orbit), an agile package manager and extensible build tool for hardware description languages (HDLs).
+A collection of settings for [Orbit](https://github.com/chaseruskin/orbit), a package manager and build tool for hardware description languages (HDLs).
   
 ## Installing
 

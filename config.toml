@@ -1,11 +1,8 @@
-# Profile: Hyperspace Labs
-# File: config.toml
-#
-# Configurations for targets and protocols with orbit.
+# Targets
 
 [[target]]
 name = "quartz"
-description = "End-to-end fpga toolflow with intel quartus prime"
+description = "Intel quartus prime toolflow"
 command = "python"
 args = ["targets/quartz.py"]
 fileset.board = "*.board.toml"
@@ -13,7 +10,7 @@ fileset.bdf = "*.bdf"
 
 [[target]]
 name   = "gsim"
-description = "Simulations with ghdl"
+description = "General-purpose GHDL simulations"
 command = "python"
 args    = ["targets/gsim.py"]
 
@@ -25,10 +22,19 @@ args = ["targets/veri.py"]
 
 [[target]]
 name = "msim"
-description = "Run tests with modelsim"
+description = "General-purpose modelsim simulations"
 command = "python"
 args    = ["targets/msim.py"]
-fileset.do = "{{ orbit.bench }}.do"
+fileset.do = "{{orbit.bench}}.do"
+
+[[target]]
+name   = "voodoo"
+description = "Vivado non-project mode toolflow"
+command = "python"
+args    = ["targets/voodoo.py"]
+fileset.xdcf = "*.xdc"
+
+# Protocols
 
 [[protocol]]
 name = "zip"

@@ -115,6 +115,11 @@ class Generic:
 
     def to_str(self) -> str:
         return self.key+'='+self.val
+    
+
+    def __str__(self):
+        return self.key+'='+self.val
+    
     pass
 
 
@@ -137,6 +142,9 @@ class Status(Enum):
         if self == Status.FAIL:
             exit(Status.FAIL.value)
         pass
+
+    def __int__(self):
+        return int(self.value)
     pass
 
 
