@@ -79,11 +79,11 @@ class Tcl:
     pass
 
 
-def synthesize(tcl: Tcl, part: str, generics=[]):
+def synthesize(tcl: Tcl, top: str, part: str, generics=[]):
     '''
     Performs synthesis.
     '''
-    tcl.push(['synth_design', '-top', TOP, '-part', str(part)] + generics)
+    tcl.push(['synth_design', '-top', top, '-part', str(part)] + generics)
     tcl.push(['write_checkpoint', '-force', 'post_synth.dcp'])
     tcl.push(['report_timing_summary', '-file', 'post_synth_timing_summary.rpt'])
     tcl.push(['report_utilization', '-file', 'post_synth_util.rpt'])
@@ -123,11 +123,11 @@ def route(tcl: Tcl):
     pass
 
 
-def bitstream(tcl: Tcl, bit_file: str):
+def bitstream(tcl: Tcl, top: str, bit_file: str):
     '''
     Peforms bitstream generation.
     '''
-    tcl.push(['write_verilog', '-force', 'cpu_impl_netlist_'+TOP+'.v', '-mode', 'timesim', '-sdf_anno', 'true'])
+    tcl.push(['write_verilog', '-force', 'cpu_impl_netlist_'+top+'.v', '-mode', 'timesim', '-sdf_anno', 'true'])
     tcl.push(['write_bitstream', '-force', bit_file])
     pass
     
@@ -204,13 +204,13 @@ def main():
 
     # select which toolflows to perform with vivado
     if eda_step.value >= Step.Synth.value:
-        synthesize(tcl, fpga_part, tcl_generics)
+        synthesize(tcl, TOP, fpga_part, tcl_generics)
     if eda_step.value >= Step.Impl.value:
         implement(tcl)
     if eda_step.value >= Step.Route.value:
         route(tcl)
     if eda_step.value >= Step.Bit.value:
-        bitstream(tcl, BIT_FILE)
+        bitstream(tcl, TOP, BIT_FILE)
     if eda_step.value >= Step.Pgm.value:
         program_device(tcl, BIT_FILE)
 

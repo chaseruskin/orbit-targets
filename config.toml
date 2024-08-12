@@ -1,24 +1,16 @@
 # Targets
 
 [[target]]
-name = "quartz"
-description = "Intel quartus prime toolflow"
-command = "python"
-args = ["targets/quartz.py"]
-fileset.board = "*.board.toml"
-fileset.bdf = "*.bdf"
-
-[[target]]
 name = "gsim"
 description = "General-purpose GHDL simulations"
 command = "python"
 args = ["targets/gsim.py"]
 
 [[target]]
-name = "veri"
-description = "Run tests with verilator"
+name = "vsim"
+description = "General-purpose verilator simulations"
 command = "python"
-args = ["targets/veri.py"]
+args = ["targets/vsim.py"]
 
 [[target]]
 name = "msim"
@@ -26,6 +18,14 @@ description = "General-purpose modelsim simulations"
 command = "python"
 args = ["targets/msim.py"]
 fileset.do = "{{orbit.bench}}.do"
+
+[[target]]
+name = "quartz"
+description = "Intel quartus prime toolflow"
+command = "python"
+args = ["targets/quartz.py"]
+fileset.board = "*.board.toml"
+fileset.bdf = "*.bdf"
 
 [[target]]
 name = "voodoo"
@@ -42,12 +42,6 @@ args = ["targets/xpro.py"]
 fileset.xdcf = "*.xdc"
 
 # Protocols
-
-[[protocol]]
-name = "zip"
-description = "Handle zip files with requests"
-command = "python"
-args = ["./protocols/zip.py", "{{orbit.ip.source.url}}"]
 
 [[protocol]]
 name = "git"

@@ -1,5 +1,5 @@
 # Profile: Hyperspace Labs
-# Target: veri
+# Target: vsim
 # References: https://github.com/ghdl/ghdl
 #
 # Run Verilog simulations with verilator.
@@ -14,7 +14,7 @@ BENCH = Env.read("ORBIT_BENCH", missing_ok=True)
 LIBRARY: str = Env.read("ORBIT_IP_LIBRARY", missing_ok=False)
 
 # handle command-line arguments
-parser = argparse.ArgumentParser(prog='veri', allow_abbrev=False)
+parser = argparse.ArgumentParser(prog='vsim', allow_abbrev=False)
 
 parser.add_argument('--strict', action='store_true', default=False, help='enable all warnings')
 parser.add_argument('--lint', action='store_true', default=False, help='run static analysis and exit')
