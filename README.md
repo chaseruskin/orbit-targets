@@ -20,7 +20,7 @@ pip install -r "$(orbit env ORBIT_HOME)/profiles/hyperspace-labs/requirements.tx
 1. Include the profile's configuration file using `orbit`:
 
 ```
-orbit config "$(orbit env ORBIT_HOME)/config.toml" --push include="profiles/hyperspace-labs/config.toml"
+orbit config --push include="profiles/hyperspace-labs/config.toml"
 ```
 
 ## Updating
