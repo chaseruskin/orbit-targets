@@ -4,7 +4,7 @@
 
 ## Available Tools
 
-The following tools have targets that are currently implemented:
+The following tools have targets implementations:
 
 ### Simulators
 - GHDL
@@ -21,7 +21,7 @@ To apply these configurations to Orbit:
 1. Clone this repository using `git`:
 
 ```
-git clone https://github.com/chaseruskin/orbit-target.git "$(orbit env ORBIT_HOME)/targets/chaseruskin"
+git clone https://github.com/chaseruskin/orbit-targets.git "$(orbit env ORBIT_HOME)/targets/chaseruskin"
 ```
 
 2. Install the required Python packages using `pip`:
