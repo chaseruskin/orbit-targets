@@ -114,7 +114,6 @@ class Fileset(Enum):
         if s == 'SYSV':
             return Fileset.SystemVerilog
         fset = Fileset.Undefined
-        fset.value = s
         return fset
     pass
 
