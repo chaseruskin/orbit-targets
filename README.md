@@ -1,26 +1,38 @@
-# orbit-profile
+# orbit-targets
 
-[Orbit](https://github.com/chaseruskin/orbit) configurations for FPGA development.
-  
+[Orbit](https://github.com/chaseruskin/orbit) targets for FPGA development.
+
+## Available Tools
+
+The following tools have targets that are currently implemented:
+
+### Simulators
+- GHDL
+- ModelSim
+
+### FPGA Toolchains
+- Xilinx Vivado (project mode and non-project mode)
+- Intel Quartus Prime
+
 ## Installing
 
 To apply these configurations to Orbit:
 
-1. Download the profile from its remote repository using `git`:
+1. Clone this repository using `git`:
 
 ```
-git clone https://github.com/hyperspace-labs/orbit-profile.git "$(orbit env ORBIT_HOME)/profiles/hyperspace-labs"
+git clone https://github.com/chaseruskin/orbit-target.git "$(orbit env ORBIT_HOME)/targets/chaseruskin"
 ```
 
 2. Install the required Python packages using `pip`:
 ```
-pip install -r "$(orbit env ORBIT_HOME)/profiles/hyperspace-labs/requirements.txt"
+pip install -r "$(orbit env ORBIT_HOME)/targets/chaseruskin/requirements.txt"
 ```
 
-1. Include the profile's configuration file using `orbit`:
+1. Include the configuration file using `orbit`:
 
 ```
-orbit config --push include="profiles/hyperspace-labs/config.toml"
+orbit config --push include="targets/chaseruskin/config.toml"
 ```
 
 ## Updating
@@ -28,5 +40,5 @@ orbit config --push include="profiles/hyperspace-labs/config.toml"
 To receive the latest changes:
 
 ```
-git -C "$(orbit env ORBIT_HOME)/profiles/hyperspace-labs" pull
+git -C "$(orbit env ORBIT_HOME)/targets/chaseruskin" pull
 ```

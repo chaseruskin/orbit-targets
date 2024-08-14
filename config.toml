@@ -1,50 +1,34 @@
-# Targets
-
 [[target]]
 name = "gsim"
-description = "General-purpose GHDL simulations"
+description = "GHDL general-purpose simulations"
 command = "python"
-args = ["targets/gsim.py"]
-
-[[target]]
-name = "vsim"
-description = "General-purpose verilator simulations"
-command = "python"
-args = ["targets/vsim.py"]
+args = ["scripts/gsim.py"]
 
 [[target]]
 name = "msim"
-description = "General-purpose modelsim simulations"
+description = "ModelSim general-purpose simulations"
 command = "python"
-args = ["targets/msim.py"]
+args = ["scripts/msim.py"]
 fileset.do = "{{orbit.bench}}.do"
 
 [[target]]
 name = "quartz"
-description = "Intel quartus prime toolflow"
+description = "Intel Quartus Prime toolflow"
 command = "python"
-args = ["targets/quartz.py"]
+args = ["scripts/quartz.py"]
 fileset.board = "*.board.toml"
 fileset.bdf = "*.bdf"
 
 [[target]]
 name = "voodoo"
-description = "Vivado non-project mode toolflow"
+description = "Xilinx Vivado non-project mode toolflow"
 command = "python"
-args = ["targets/voodoo.py"]
+args = ["scripts/voodoo.py"]
 fileset.xdcf = "*.xdc"
 
 [[target]]
 name = "xpro"
-description = "Vivado project mode toolflow"
+description = "Xilinx Vivado project mode toolflow"
 command = "python"
-args = ["targets/xpro.py"]
+args = ["scripts/xpro.py"]
 fileset.xdcf = "*.xdc"
-
-# Protocols
-
-[[protocol]]
-name = "git"
-description = "Handle remote repositories with git"
-command = "git"
-args = ["clone", "-b", "{{orbit.ip.version}}", "{{orbit.ip.source.url}}"]
