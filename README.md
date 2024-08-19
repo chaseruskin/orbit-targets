@@ -4,11 +4,12 @@
 
 ## Available Tools
 
-The following tools have targets implementations:
+The following tools have target implementations:
 
 ### Simulators
 - GHDL
 - ModelSim
+- Vivado Simulator
 
 ### FPGA Toolchains
 - Xilinx Vivado (project mode and non-project mode)

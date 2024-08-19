@@ -12,6 +12,12 @@ args = ["scripts/msim.py"]
 fileset.do = "{{orbit.bench}}.do"
 
 [[target]]
+name = "xsim"
+description = "Vivado Simulator general-purpose simulations"
+command = "python"
+args = ["scripts/xsim.py"]
+
+[[target]]
 name = "quartz"
 description = "Intel Quartus Prime toolflow"
 command = "python"
