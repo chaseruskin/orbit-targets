@@ -1,117 +1,102 @@
-# Plugin: orbit-xsim.py
-# About: 
-#   A quick and simple plugin to orchestrate the building process for the Vivado 
-#   simulator (xsim) as a backend for Orbit.
-# Note:
+#   Simple execution process for the Vivado Simulator (xsim).
+#
 #   Assumes Vivado's command-line tools are available via your PATH environment
 #   variable.
-#
-# Filesets:
-#   XSIM-TCL  = *.tcl
-#   XSIM-WCFG = *.wcfg
-#
-# Simulation Modes:
-#   'cl'- Run completely in console. This will run the simulation until it finishes with
-#   no interaction or gui.
-#
-#   'gui'- Interactively load the simulation and open it in the gui. This will not run
-#   the simulation, but will load it into the gui to run and restart.
-#
-#   'review'- View the waveform. This will only open the waveform in the gui for inspection.
-#
-import os
-import sys
-import argparse
-from typing import List
-import shutil
 
+import argparse
 from mod import Blueprint, Env, Tcl, Generic, Command
 
+def main():
+    # append xsim (vivado) installation path to PATH env variable
+    Env.add_path(Env.read("ORBIT_ENV_VIVADO_PATH", missing_ok=True))
 
-# append xsim (vivado) installation path to PATH env variable
-Env.add_path(Env.read("ORBIT_ENV_VIVADO_PATH", missing_ok=True))
+    # handle command-line arguments
+    parser = argparse.ArgumentParser(prog='xsim', allow_abbrev=False)
 
-# handle command-line arguments
-parser = argparse.ArgumentParser(prog='xsim', allow_abbrev=False)
+    parser.add_argument('--generic', '-g', action='append', type=Generic.from_arg, default=[], metavar='KEY=VALUE', help='override top-level VHDL generics')
+    parser.add_argument('--mode', choices=['comp', 'elab', 'sim'], default='sim', help='select a workflow')
+    parser.add_argument('--gui', action='store_true', default=False, help='open the gui')
 
-parser.add_argument('--generic', '-g', action='append', type=Generic.from_arg, default=[], metavar='KEY=VALUE', help='override top-level VHDL generics')
-parser.add_argument('--mode', choices=['comp', 'elab', 'sim'], default='sim', help='select a workflow')
-parser.add_argument('--gui', action='store_true', default=False, help='open the gui')
+    args = parser.parse_args()
 
-args = parser.parse_args()
+    gui = args.gui
+    mode = args.mode
+    generics = args.generic
 
-gui = args.gui
-mode = args.mode
-generics = args.generic
+    # process the blueprint
 
-# process the blueprint
+    vhdl_src = []
+    vlog_src = []
+    sysv_src = []
 
-vhdl_src = []
-vlog_src = []
-sysv_src = []
+    steps = Blueprint().parse()
 
-steps = Blueprint().parse()
+    for step in steps:
+        if step.is_vhdl():
+            vhdl_src += [step]
+        elif step.is_vlog():
+            vlog_src += [step]
+        elif step.is_sysv():
+            sysv_src += [step]
+        pass
 
-for step in steps:
-    if step.is_vhdl():
-        vhdl_src += [step]
-    elif step.is_vlog():
-        vlog_src += [step]
-    elif step.is_sysv():
-        sysv_src += [step]
+    # compile sources
+    print('info: compiling source files ...')
+
+    local_lib = 'work'
+    for step in steps:
+        if step.is_builtin():
+            print('  ->', Env.quote_str(step.path))
+            local_lib = step.lib
+        if step.is_vhdl():
+            Command('xvhdl').arg('-incr').arg('-work').arg(step.lib).arg(step.path).spawn().unwrap()
+        elif step.is_vlog():
+            Command('xvlog').arg('-incr').arg('-work').arg(step.lib).arg(step.path).spawn().unwrap()
+        elif step.is_sysv():
+            Command('xvlog').arg('-sv').arg('-incr').arg('-work').arg(step.lib).arg(step.path).spawn().unwrap()
+        pass
+
+    if mode == 'comp':
+        print('info: compilation complete')
+        exit(0)
+
+    # convert the stored generics into xelab compatible options for the command-line
+    gen_args = []
+    for g in generics:
+        gen_args += ['-generic_top', g.to_str()]
+        pass
+
+    DUT_NAME = Env.read("ORBIT_DUT_NAME", missing_ok=False)
+    TB_NAME = Env.read("ORBIT_TB_NAME", missing_ok=False)
+
+    # elaborate the testbench
+    Command('xelab').args(['-debug', 'typical']).args(['-top', local_lib + '.' + TB_NAME]).args(['-snapshot', TB_NAME]).args(gen_args).spawn().unwrap()
+
+    if mode == 'elab':
+        print('info: elaboration complete')
+        exit(0)
+
+    # create a basic tcl file
+    tcl = Tcl('orbit.tcl')
+    tcl.push('log_wave -recursive *', raw=True)
+    tcl.push(['run', 'all'])
+    tcl.push(['exit'])
+    tcl.save()
+
+    run_args = ['-R', '-tclbatch', 'orbit.tcl']
+
+    # run the simulation 
+    Command('xsim').arg(TB_NAME).args(run_args).spawn().unwrap()
+
+    if mode == 'sim':
+        print('info: simulation complete')
+        exit(0)
     pass
 
-# compile sources
-print('info: compiling source files ...')
 
-local_lib = 'work'
-for step in steps:
-    if step.is_builtin():
-        print('  ->', Env.quote_str(step.path))
-        local_lib = step.lib
-    if step.is_vhdl():
-        Command(shutil.which('xvhdl')).arg('-incr').arg('-work').arg(step.lib).arg(step.path).spawn().unwrap()
-    elif step.is_vlog():
-        Command(shutil.which('xvlog')).arg('-incr').arg('-work').arg(step.lib).arg(step.path).spawn().unwrap()
-    elif step.is_sysv():
-        Command(shutil.which('xvlog')).arg('-sv').arg('-incr').arg('-work').arg(step.lib).arg(step.path).spawn().unwrap()
-    pass
+if __name__ == '__main__':
+    main()
 
-if mode == 'comp':
-    print('info: compilation complete')
-    exit(0)
-
-# convert the stored generics into xelab compatible options for the command-line
-gen_args = []
-for g in generics:
-    gen_args += ['-generic_top', g.to_str()]
-    pass
-
-DUT_NAME = Env.read("ORBIT_DUT_NAME", missing_ok=False)
-TB_NAME = Env.read("ORBIT_TB_NAME", missing_ok=False)
-
-# elaborate the testbench
-Command(shutil.which('xelab')).args(['-debug', 'typical']).args(['-top', local_lib + '.' + TB_NAME]).args(['-snapshot', TB_NAME]).args(gen_args).spawn().unwrap()
-
-if mode == 'elab':
-    print('info: elaboration complete')
-    exit(0)
-
-# create a basic tcl file
-tcl = Tcl('orbit.tcl')
-tcl.push('log_wave -recursive *', raw=True)
-tcl.push(['run', 'all'])
-tcl.push(['exit'])
-tcl.save()
-
-run_args = ['-R', '-tclbatch', 'orbit.tcl']
-
-# run the simulation 
-Command(shutil.which('xsim')).arg(TB_NAME).args(run_args).spawn().unwrap()
-
-if mode == 'sim':
-    print('info: simulation complete')
-    exit(0)
 
 # run_args = ['-R']
 # if(tcl_config != None and sim_mode == GUI and False): # disable tcl files for now

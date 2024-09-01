@@ -8,6 +8,7 @@ import os
 from typing import List, Tuple
 from enum import Enum
 import argparse
+import shutil
 import subprocess
 
 class Esc:
@@ -228,7 +229,7 @@ class Status(Enum):
 
 class Command:
     def __init__(self, command: str):
-        self._command = command
+        self._command = shutil.which(command)
         self._args = []
 
     def args(self, args: List[str]):
