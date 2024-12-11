@@ -181,9 +181,9 @@ set_global_assignment -name RESERVE_ALL_UNUSED_PINS_WEAK_PULLUP "AS INPUT TRI-ST
         elif src.is_vlog():
             tcl.push("set_global_assignment -name VERILOG_FILE "+Env.quote_str(src.path)+" -library "+Env.quote_str(src.lib), raw=True)
         elif src.is_sysv():
-            tcl.push("set_global_assignement -name SYSTEMVERILOG_FILE "+Env.quote_str(src.path)+" -library "+Env.quote_str(src.lib), raw=True)
+            tcl.push("set_global_assignment -name SYSTEMVERILOG_FILE "+Env.quote_str(src.path)+" -library "+Env.quote_str(src.lib), raw=True)
         pass
-
+   # exit(101)
     for bdf in bdf_files:
         tcl.push("set_global_assignment -name BDF_FILE "+Env.quote_str(bdf), raw=True)
 
