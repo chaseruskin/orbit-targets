@@ -149,7 +149,7 @@ project_new """ + Env.quote_str(PROJECT) + """ -revision """ + Env.quote_str(PRO
 # Set default configurations and device
 set_global_assignment -name NUM_PARALLEL_PROCESSORS """ + Env.quote_str("ALL") + """
 set_global_assignment -name VHDL_INPUT_VERSION VHDL_1993
-set_global_assignment -name VERILOG_INPUT_VERSION SYSTEMVERILOG_2012
+set_global_assignment -name VERILOG_INPUT_VERSION SYSTEMVERILOG_2005
 set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (VHDL)"
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VHDL" -section_id EDA_SIMULATION
 set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id EDA_SIMULATION
