@@ -49,7 +49,7 @@ def verify_generics(data: dict, ext_generics: dict) -> bool:
     # check if an invalid generic was supplied
     for gen in ext_generics.keys():
         if gen not in def_gen_names:
-            log.error('generic "'+gen+'" does not exist for unit '+unit, exit_on_err=False)
+            log.error('generic "'+gen+'" does not exist for unit '+data['name'], exit_on_err=False)
             invalid_gen = True
 
     if missing_gen == True or invalid_gen == True:
