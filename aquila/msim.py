@@ -19,9 +19,10 @@ import sys
 
 from aquila.env import KvPair
 from aquila import log
+from aquila import orbit
 from aquila import env
 from aquila.process import Command
-from aquila.blueprint import Blueprint, Entry
+from aquila.orbit import Blueprint, Entry
 from aquila.script import DoFile
 from aquila.ninja import Ninja
 
@@ -82,7 +83,7 @@ class Msim:
         self.dut_name = env.read('ORBIT_DUT_NAME')
 
         # append modelsim installation path to PATH env variable
-        env.add_path(env.read("MODELSIM_PATH", missing_ok=True))
+        env.append('PATH', env.read("MODELSIM_PATH", missing_ok=True))
 
         # verify we are using the json plan for incremental compilation
         bp_plan = self.bp.get_plan()
@@ -104,7 +105,7 @@ class Msim:
         """
 
         if self.mode.value != Mode.COMP.value:
-            env.verify_all_generics_have_values(env.read('ORBIT_TB_JSON'), self.generics)
+            orbit.verify_generics(self.tb_name, self.generics)
 
         nj = Ninja()
 

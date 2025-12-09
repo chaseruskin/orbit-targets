@@ -1,9 +1,87 @@
 """
-Module for interfacing with Orbit's generated blueprint file.
+Functions and classes mapped to interfacing with Orbit.
 """
 
-from typing import List as _List
+from aquila.process import Command
+import json
 from aquila import env
+import toml
+from typing import List as _List
+from aquila import log
+
+
+def get_unit_json(name: str) -> dict:
+    """
+    Returns the JSON dictionary for the desired unit, None if not found.
+    """
+    data = ''
+    if name is not None:
+        data: str = Command([env.read('ORBIT'), 'get', '--json', name]).output()[0]
+    if len(data.strip()) == 0:
+        log.error('failed to get json data for unit:', name)
+    try:
+        return json.loads(data)
+    except:
+        log.error('failed to get json data for unit:', name)
+
+
+def verify_generics(data: dict, ext_generics: dict) -> bool:
+    """
+    Verifies all generics have some value, either from the command-line or as a default, where
+    `data` is JSON dictionary for the core to check its generic values and `ext_generics` is the list of generics passed
+    from the command-line.
+
+    Exits 101 if a generic value is not supplied.
+    """
+    unit_gens = data['generics']
+    missing_gen = False
+    def_gen_names = []
+    # check if all generics have a value
+    for gen in unit_gens:
+        def_gen_names += [gen['name']]
+        if gen['default'] is None:
+            # check the generic has a value from an external source
+            if gen['name'] not in ext_generics or ext_generics[gen['name']] is None:
+                log.error('missing value for generic "'+gen['name']+'"', exit_on_err=False)
+                missing_gen = True
+    
+    invalid_gen = False
+    # check if an invalid generic was supplied
+    for gen in ext_generics.keys():
+        if gen not in def_gen_names:
+            log.error('generic "'+gen+'" does not exist for unit '+unit, exit_on_err=False)
+            invalid_gen = True
+
+    if missing_gen == True or invalid_gen == True:
+        exit(101)
+
+
+class Manifest:
+    """
+    Module for interfacing with an Orbit project's manifest file.
+    """
+
+    def __init__(self, path: str=None):
+        self.path = path if path is not None else env.read('ORBIT_MANIFEST_FILE', missing_ok=False)
+        self.data = dict()
+        with open(self.path, 'r') as fd:
+            self.data = toml.loads(fd.read())
+
+    def get(self, table: str):
+        """
+        Attempts to fetch data from `table` with the internal TOML dictionary.
+
+        Returns None if missing a key along with way.
+        """
+        parts = table.split('.')
+        subtable = self.data
+        for p in parts:
+            try:
+                subtable = subtable[p]
+            except:
+                return None
+        return subtable
+    
 
 class Entry:
     """

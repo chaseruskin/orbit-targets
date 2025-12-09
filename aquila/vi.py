@@ -20,10 +20,10 @@ import os
 
 from aquila import log
 from aquila import env
+from aquila import orbit
 from aquila.env import KvPair
-from aquila.manifest import Manifest
 from aquila.process import Command
-from aquila.blueprint import Blueprint, Entry
+from aquila.orbit import Blueprint, Entry, Manifest
 from aquila.script import TclScript
 from aquila.ninja import Ninja
 
@@ -127,8 +127,9 @@ class Vi:
         elif cfg_part is not None:
             self.part = cfg_part
         else:
+            self.part = Vi.DEFAULT_PART  
             log.info('using default part '+self.part+' since no part was defined')
-            self.part = Vi.DEFAULT_PART            
+           
 
         self.OUT_DIR = env.read('ORBIT_OUT_DIR')
         self.TOP_NAME = env.read('ORBIT_TOP_NAME', missing_ok=False)
@@ -172,7 +173,7 @@ class Vi:
         """
         Generate the target's tcl script to be used by vivado.
         """
-        env.verify_all_generics_have_values(env.read('ORBIT_TOP_JSON'), self.generics)
+        orbit.verify_generics(self.TOP_NAME, self.generics)
 
         vivado_cmd = 'vivado' if os.name != 'nt' else 'vivado.bat'
         

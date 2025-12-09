@@ -1,51 +1,79 @@
 """
-Module for interfacing with an Orbit project's manifest file. 
+Functionality for powering the process for automated test
+identification, test running, and test reporting.
 """
 
-import toml
 from aquila import env
-from aquila.process import Command
-import json
+import hashlib
 import time
 from termcolor import colored
 from aquila import log
+from aquila.orbit import Manifest
 
 
-class Manifest:
+def base36encode(number, alphabet='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'):
+    """Converts an integer to a base36 string."""
+    if not isinstance(number, int):
+        raise TypeError('number must be an integer')
+ 
+    base36 = ''
+    sign = ''
+ 
+    if number < 0:
+        sign = '-'
+        number = -number
+ 
+    if 0 <= number < len(alphabet):
+        return sign + alphabet[number]
+ 
+    while number != 0:
+        number, i = divmod(number, len(alphabet))
+        base36 = alphabet[i] + base36
+ 
+    return sign + base36
 
-    def __init__(self, path: str=None):
-        self.path = path if path is not None else env.read('ORBIT_MANIFEST_FILE', missing_ok=False)
-        self.data = dict()
-        with open(self.path, 'r') as fd:
-            self.data = toml.loads(fd.read())
 
-    def get(self, table: str):
+class Seed:
+    """
+    An integer value used to set randomness.
+    """
+
+    MIN_SEED_VALUE = 0
+    MAX_SEED_VALUE = (2**32)-1
+
+    def __init__(self, seed: int=None):
+        import random
+        self.seed = seed
+        if seed is None:
+            self.seed = random.randint(Seed.MIN_SEED_VALUE, Seed.MAX_SEED_VALUE)
+    
+    def get_seed(self) -> int:
         """
-        Attempts to fetch data from `table` with the internal TOML dictionary.
-
-        Returns None if missing a key along with way.
+        Returns the random seed.
         """
-        parts = table.split('.')
-        subtable = self.data
-        for p in parts:
-            try:
-                subtable = subtable[p]
-            except:
-                return None
-        return subtable
+        return self.seed
+    
+    @staticmethod
+    def from_str(s: str):
+        if s is not None:
+            s = int(s)
+        return Seed(s)
 
 
 class TestModule:
 
-    def __init__(self, dut: str=None, tb: str=None, generics: dict={}, seed: int=None):
+    def __init__(self, dut: str=None, tb: str=None, generics: dict={}, seed: int=None, path: str=None):
         self.dut = dut
         self.tb = tb
+        self.path = path
         self.generics = generics
         self.seed = seed
+        self._hash = self._compute_hash()
+        self.is_tb_dyn = False
 
-    def get_dirname(self) -> str:
+    def _compute_hash(self) -> str:
         """
-        Returns the unique directory name for this test module.
+        Returns the unique hash for this test module.
         """
         gens = ''
         for (k, v) in list(self.generics.items()):
@@ -54,23 +82,36 @@ class TestModule:
         if self.seed is not None:
             seed = '_seed=' + str(self.seed)
 
-        dir_name = ''
+        full_name = ''
         if self.dut is not None:
-            dir_name += self.dut
+            full_name += self.dut
         if self.tb is not None:
             if self.dut is not None:
-                dir_name += '__'
-            dir_name += self.tb
-         
+                full_name += '__'
+            full_name += self.tb
+        
         if len(seed) > 0 or len(gens) > 0:
-            dir_name += '_' + gens + seed
-        return dir_name
+            full_name += '_' + gens + seed
+        full_hash = hashlib.sha256(bytes(full_name, encoding='utf-8'))
+        return full_hash.hexdigest()
     
+    def get_short_hash(self, size: int=8):
+        return self._hash[:size]
+    
+    def set_path(self, path: str):
+        self.path = path
+
+    def get_path(self) -> str:
+        return self.path
+
     def get_dut(self) -> str:
         return self.dut
     
     def get_tb(self) -> str:
         return self.tb
+    
+    def get_top(self) -> str:
+        return self.dut if self.tb is None else self.tb
     
     def get_generics(self) -> dict:
         return self.generics
@@ -80,19 +121,28 @@ class TestModule:
     
     def set_tb(self, name: str):
         self.tb = name
+        self.is_tb_dyn = True
+        self._hash = self._compute_hash()
+
+    def is_tb_dynamic(self) -> bool:
+        """
+        Checks if the TB was added during the build process.
+        """
+        return self.is_tb_dyn
 
     def set_seed(self, seed: int):
         self.seed = seed
+        self._hash = self._compute_hash()
 
     def is_valid(self) -> bool:
         return self.dut is not None or self.tb is not None
     
     def __str__(self) -> str:
         result = ''
-        if self.tb is not None:
-            result = self.tb
+        if self.tb is not None and self.is_tb_dynamic() == False:
+            result += self.tb
         if self.dut is not None:
-            if self.tb is not None:
+            if self.tb is not None and self.is_tb_dynamic() == False:
                 result += '::'
             result += self.dut
         if len(self.generics) > 0:
@@ -159,14 +209,16 @@ class TestRunner:
         stmt = '...'
         print(stmt, end=' ')
     
-    def disp_trial_result(self, ok: bool, log: str=None):
+    def disp_trial_result(self, ok: bool, msg: str=None):
         if ok:
             self.num_passed += 1
             stmt = colored('ok', "green")
         else:
             stmt = colored('failed', 'red')
-            if log is not None:
-                stmt += '\n  '+str(log)
+        if isinstance(msg, list):
+            msg = '\n'.join(msg)
+        if msg is not None:
+            stmt += '\n  '+str(msg).replace('\n', '\n  ')
         print(stmt)
 
     def disp_result(self) -> bool:
@@ -196,13 +248,3 @@ class TestRunner:
             log.error('no tests defined')
         elif self.modules[0].is_valid() == False:
             log.error('no tests defined')
-    
-
-def get_unit_json(name: str) -> dict:
-    """
-    Returns the JSON dictionary for the desired unit, None if not found.
-    """
-    data: str = Command([env.read('ORBIT'), 'get', '--json', name]).output()[0]
-    if len(data.strip()) == 0:
-        return None
-    return json.loads(data)

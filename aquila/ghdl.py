@@ -3,7 +3,6 @@ Backend target process for simulations with GHDL.
 """
 
 import argparse
-from typing import List
 import os
 import glob
 import shutil
@@ -12,12 +11,12 @@ from enum import Enum
 
 from aquila import log
 from aquila import env
-from aquila.blueprint import Blueprint, Entry
-from aquila.env import KvPair, Seed
+from aquila.orbit import Blueprint, Entry
+from aquila.env import KvPair
 from aquila.process import Command
 from aquila.ninja import Ninja
-from aquila.manifest import TestRunner, TestModule
-from aquila import manifest as man
+from aquila.test import TestRunner, TestModule, Seed
+from aquila import orbit
 
 
 class Mode(Enum):
@@ -95,35 +94,34 @@ class Ghdl:
         nj.add_rule('vhdl', 'ghdl ${opts} --snap=${out} --work=${lib} ${in} > ${out}')
 
         entry: Entry
+        outs = set()
         for entry in self.entries:
             if not entry.is_builtin():
                 continue
             self.libs.add((entry.lib, entry.lib))
             rule = entry.fset.lower()
             out = Ninja.create_output_filename(entry.path)
+            if out in outs:
+                continue
             deps = [Ninja.create_output_filename(p) for p in entry.deps]
             # add the build into the dependency graph
             nj.add_build(rule, [out], [entry.path], deps, {'lib': entry.lib})
+            outs.add(out)
         nj.save()
 
-    def configure(self, dut, tb, generics):
+    def configure(self, dut, tb, top, generics):
         self.dut_name = dut
         self.tb_name = tb
-        self.top_sim_name = self.dut_name if self.tb_name is None else self.tb_name
+        self.top_sim_name = top
         self.top_generics = generics
 
-    def compile(self) -> bool:
+    def compile(self, top_path: str) -> bool:
         """
         Calls ninja to compile the source files.
 
         Returns true if the test passed "okay"
         """
-        top_json = man.get_unit_json(self.top_sim_name)
-        if top_json is None:
-            log.error('failed to get json data for unit:', self.top_sim_name)
-        env.verify_all_generics_have_values(top_json, self.top_generics)
-
-        nj_recipe = Ninja.create_output_filename(top_json['file'])
+        nj_recipe = Ninja.create_output_filename(top_path)
 
         # build the list of source files
         status = Command(['ninja', '--quiet', nj_recipe]).spawn()
@@ -157,7 +155,7 @@ class Ghdl:
             '--time-resolution='+self._time_res, 
             '--coverage',
             '--work='+self.top_sim_lib,
-            self.top_sim_name, 
+            self.tb_name, 
             '--fst='+fst_path,
         ] + ['-g' + str(k)+'='+str(v) for (k, v) in self.top_generics.items()] + extra_args).record(log_path)
         
@@ -173,29 +171,36 @@ class Ghdl:
             os.remove(cf)
 
         # save off files as regression
-        regression_dir = self.out_path + '/' + 'regressions' + '/' + out_dir
-        os.makedirs(regression_dir, exist_ok=True)
+        results_dir = self.out_path + '/' + 'results' + '/' + out_dir
+        os.makedirs(results_dir, exist_ok=True)
 
-        final_log_path = None
-        # print()
+        final_msg = []
+        safe_log_path = None
         if os.path.exists(ccov_path):
-            # log.info('code coverage report available at: \"'+ccov_path+'\"')
-            shutil.copyfile(ccov_path, regression_dir+'/'+ccov_file)
+            safe_ccov_path = results_dir+'/'+ccov_file
+            shutil.move(ccov_path, safe_ccov_path)
+            final_msg += ['code coverage report: \"'+safe_ccov_path+'\"']
         if os.path.exists(fcov_path):
-            # log.info('functional coverage report available at: \"'+fcov_path+'\"')
-            shutil.copyfile(fcov_path, regression_dir+'/'+fcov_file)
+            safe_fcov_path = results_dir+'/'+fcov_file
+            shutil.move(fcov_path, safe_fcov_path)
+            final_msg += ['functional coverage report: \"'+safe_fcov_path+'\"']
         if os.path.exists(fst_file):
-            # log.info('simulation waveform available at: \"'+fst_path+'\"')
-            pass
+            safe_fst_path = results_dir+'/'+fst_file
+            shutil.move(fst_path, safe_fst_path)
+            final_msg += ['simulation waveform: \"'+safe_fst_path+'\"']
         if os.path.exists(log_path):
-            # log.info('simulation log available at: \"'+log_path+'\"')
-            final_log_path = regression_dir+'/'+log_file
-            shutil.copyfile(log_path, final_log_path)
+            safe_log_path = results_dir+'/'+log_file
+            shutil.move(log_path, safe_log_path)
+            final_msg += ['simulation log: \"'+safe_log_path+'\"']
 
         is_ok = status.is_ok()
-        is_ok = is_ok and self.analyze_results(log_path)
+        is_ok = is_ok and self.analyze_results(safe_log_path)
 
-        return is_ok, final_log_path
+        # display no message if the simulation passes
+        if is_ok:
+            final_msg = None
+
+        return is_ok, final_msg
   
     def generate_code_coverage_file(self, table: dict, out_path: str):
         """
@@ -249,7 +254,8 @@ class Ghdl:
             return False
         has_err = False
         with open(log_file, 'r') as fd:
-            has_err = fd.read().lower().count('error):')
+            data = fd.read()
+            has_err = data.count('error):') or data.count('ERROR') 
         if has_err:
             return False
         return True
@@ -266,12 +272,17 @@ def main():
 
     tm: TestModule
     for tm in runner.get_modules():
+        top_json = orbit.get_unit_json(tm.get_top())
+        orbit.verify_generics(top_json, tm.get_generics())
+        tm.set_path(top_json['source'])
+
+    for tm in runner.get_modules():
         runner.disp_trial_start(tm)
-        ghdl.configure(tm.get_dut(), tm.get_tb(), tm.get_generics())
-        ghdl.compile()
+        ghdl.configure(tm.get_dut(), tm.get_tb(), tm.get_tb(), tm.get_generics())
+        ghdl.compile(tm.get_path())
         runner.disp_trial_progress()
-        ok, log = ghdl.run(tm.get_dirname())
-        runner.disp_trial_result(ok, log)
+        ok, msg = ghdl.run(tm.get_short_hash())
+        runner.disp_trial_result(ok, msg)
 
     all_ok = runner.disp_result()
     if all_ok == False:

@@ -144,4 +144,3 @@ class Command:
         if out is not None:
             return (out.decode('utf-8'), Status.OKAY)
         return ('', Status.OKAY)
-    pass
